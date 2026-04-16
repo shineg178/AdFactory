@@ -1,0 +1,32 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Scaled up Bumpy Potato Body to fill bounds (approx 2.5x increase in area) -->
+  <path d="M110 130C40 180 30 380 120 440C200 480 350 480 410 420C480 350 490 200 420 120C350 40 200 60 110 130Z" fill="#A67C52"/>
+  
+  <!-- Texture / Highlights -->
+  <path d="M150 200C120 250 130 350 200 400C250 430 300 420 350 380C400 340 420 250 380 180" fill="#B58B63" opacity="0.3"/>
+  
+  <!-- Dirt spots -->
+  <circle cx="150" cy="380" r="18" fill="#5D3A1A" opacity="0.4"/>
+  <circle cx="400" cy="200" r="15" fill="#5D3A1A" opacity="0.4"/>
+  <circle cx="280" cy="90" r="22" fill="#5D3A1A" opacity="0.4"/>
+  <circle cx="410" cy="360" r="12" fill="#5D3A1A" opacity="0.4"/>
+  <circle cx="200" cy="150" r="14" fill="#5D3A1A" opacity="0.2"/>
+
+  <!-- Super Cute Eyes (Enlarged) -->
+  <g filter="drop-shadow(0px 4px 4px rgba(0,0,0,0.2))">
+    <circle cx="200" cy="240" r="28" fill="#1A1A1A"/>
+    <circle cx="210" cy="230" r="10" fill="white"/>
+    <circle cx="190" cy="250" r="4" fill="white" opacity="0.6"/>
+    
+    <circle cx="340" cy="240" r="28" fill="#1A1A1A"/>
+    <circle cx="350" cy="230" r="10" fill="white"/>
+    <circle cx="330" cy="250" r="4" fill="white" opacity="0.6"/>
+  </g>
+
+  <!-- Pink Blush (Enlarged) -->
+  <circle cx="140" cy="290" r="28" fill="#FF9494" opacity="0.6"/>
+  <circle cx="400" cy="290" r="28" fill="#FF9494" opacity="0.6"/>
+
+  <!-- Little Smile -->
+  <path d="M245 310C245 310 258 335 275 335C292 335 305 310 305 310" stroke="#1A1A1A" stroke-width="14" stroke-linecap="round"/>
+</svg>

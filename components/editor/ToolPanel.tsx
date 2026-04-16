@@ -1,7 +1,7 @@
 "use client";
 
 import { useEditor } from "./EditorContext";
-import { Sparkles, Type, Image as ImageIcon, Plus, Wand2, Loader2, Check, AlertCircle, Shapes, Upload } from "lucide-react";
+import { Sparkles, Type, Image as ImageIcon, Plus, Wand2, Loader2, Check, AlertCircle, Shapes, Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useRef } from "react";
 
@@ -12,7 +12,7 @@ interface AdCopy {
 }
 
 export default function ToolPanel() {
-  const { activeTab, addText, addImage, addShape } = useEditor();
+  const { activeTab, setActiveTab, addText, addImage, addShape } = useEditor();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [aiPrompt, setAiPrompt] = useState("");
@@ -55,23 +55,29 @@ export default function ToolPanel() {
   };
 
   const applyCopy = (copy: AdCopy) => {
-    // All items are centered at (0,0) in our artboard system
     addText(copy.mainHeadline, { fontSize: 80, fontWeight: "bold", top: -150 });
     addText(copy.subHeadline, { fontSize: 32, fill: "#666666", top: 20 });
     addText(copy.cta, { fontSize: 24, backgroundColor: "#000000", fill: "#ffffff", padding: 20, top: 180 });
   };
 
+  // If select tab or nothing, don't show the panel
   if (activeTab === "select") return null;
 
   return (
-    <div className="w-80 border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 flex flex-col z-10">
-      <div className="p-4 border-b border-zinc-100 dark:border-zinc-800">
+    <div className="absolute left-0 top-0 h-full w-80 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border-r border-zinc-200 dark:border-zinc-800 z-40 animate-in slide-in-from-left duration-300 shadow-2xl flex flex-col">
+      <div className="p-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
         <h3 className="text-sm font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
           {activeTab === "text" && <><Type className="size-4" /> 텍스트 도구</>}
           {activeTab === "shape" && <><Shapes className="size-4" /> 도형</>}
           {activeTab === "image" && <><ImageIcon className="size-4" /> 이미지 에셋</>}
           {activeTab === "ai" && <><Sparkles className="size-4 text-indigo-500" /> AI 어시스턴트</>}
         </h3>
+        <button 
+          onClick={() => setActiveTab("select")}
+          className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 transition-colors"
+        >
+          <X className="size-4" />
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">

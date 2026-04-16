@@ -1,13 +1,15 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, ReactNode, useRef } from "react";
-import { Canvas, FabricObject, Textbox, FabricImage, Rect, Circle, Triangle, Polygon } from "fabric";
+import React, { createContext, useContext, useState, useCallback, ReactNode, useRef, useMemo, useEffect } from "react";
+import { Canvas, FabricObject, Textbox, FabricImage, Rect, Circle, Triangle, Polygon, Group, Shadow } from "fabric";
 
 type TabType = "select" | "text" | "image" | "shape" | "ai" | "layers";
 
 interface CustomFont {
   name: string;
   family: string;
+  postscriptName?: string;
+  fullName?: string;
 }
 
 interface EditorContextType {
@@ -31,6 +33,13 @@ interface EditorContextType {
   undo: () => void;
   redo: () => void;
   saveHistory: () => void;
+  copy: () => void;
+  paste: () => void;
+  groupObjects: () => void;
+  ungroupObjects: () => void;
+  alignObject: (type: "left" | "center" | "right" | "top" | "middle" | "bottom") => void;
+  loadSystemFonts: () => Promise<void>;
+  resetDesign: () => void;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -38,12 +47,14 @@ const EditorContext = createContext<EditorContextType | undefined>(undefined);
 export function EditorProvider({ children }: { children: ReactNode }) {
   const [canvas, _setCanvas] = useState<Canvas | null>(null);
   const canvasRef = useRef<Canvas | null>(null);
+  const clipboard = useRef<FabricObject | null>(null);
   
   const [selectedObject, setSelectedObject] = useState<FabricObject | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("select");
   const [zoom, setZoom] = useState(1);
   const [canvasWidth, setCanvasWidth] = useState(1080);
   const [canvasHeight, setCanvasHeight] = useState(1080);
+  
   const [customFonts, setCustomFonts] = useState<CustomFont[]>([
     { name: "Pretendard", family: "Pretendard, -apple-system, sans-serif" },
     { name: "Gmarket Sans", family: "GmarketSansMedium, sans-serif" },
@@ -58,54 +69,34 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     _setCanvas(c);
   }, []);
 
-  const addCustomFont = useCallback((name: string, family: string) => {
-    setCustomFonts(prev => [...prev, { name, family }]);
-  }, []);
-
   const saveHistory = useCallback(() => {
     const c = canvasRef.current;
     if (!c) return;
     try {
-      const json = JSON.stringify(c.toJSON());
+      // Must include 'isArtboard' custom property in serialization
+      const json = JSON.stringify((c as any).toJSON(['isArtboard']));
       if (history.current[history.current.length - 1] === json) return;
       history.current.push(json);
       if (history.current.length > 50) history.current.shift();
       redoStack.current = []; 
-    } catch (e) {
-      console.error("History Save Error:", e);
-    }
-  }, []);
+      localStorage.setItem("ad-factory-last-design", json);
+      localStorage.setItem("ad-factory-canvas-config", JSON.stringify({ canvasWidth, canvasHeight }));
+    } catch (e) { console.error(e); }
+  }, [canvasWidth, canvasHeight]);
 
-  // Center Item at global (0,0) for Artboard system
   const centerItem = useCallback((obj: FabricObject) => {
-    obj.set({
-      originX: 'center',
-      originY: 'center',
-      left: 0,
-      top: 0
-    });
+    obj.set({ originX: 'center', originY: 'center', left: 0, top: 0 });
   }, []);
 
   const addText = useCallback((text: string, options = {}) => {
     const c = canvasRef.current;
     if (!c) return;
     const fabricText = new Textbox(text, {
-      fontSize: 80, 
-      fill: "#111111", 
-      width: 600, 
-      fontFamily: "Pretendard",
-      cornerColor: "#4f46e5", 
-      cornerStyle: "circle", 
-      transparentCorners: false,
-      textAlign: "center",
+      fontSize: 80, fill: "#111111", width: 600, 
+      fontFamily: "Pretendard", textAlign: "center",
+      cornerColor: "#6366f1", cornerStyle: "circle", transparentCorners: false,
       ...options
     });
-    
-    fabricText.setControlsVisibility({
-      mt: true, mb: true, ml: true, mr: true,
-      tl: true, tr: true, bl: true, br: true
-    });
-    
     centerItem(fabricText);
     c.add(fabricText);
     c.setActiveObject(fabricText);
@@ -119,7 +110,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     FabricImage.fromURL(url, { crossOrigin: 'anonymous' }).then((img) => {
       const maxWidth = 800;
       if (img.width > maxWidth) img.scale(maxWidth / img.width);
-      img.set({ cornerColor: "#4f46e5", cornerStyle: "circle", transparentCorners: false });
       centerItem(img);
       c.add(img);
       c.setActiveObject(img);
@@ -132,8 +122,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     const c = canvasRef.current;
     if (!c) return;
     let shape: FabricObject;
-    const common = { fill: "#4f46e5", ...options };
-
+    const common = { fill: "#6366f1", ...options };
     switch (type) {
       case "rect": shape = new Rect({ ...common, width: 300, height: 300, rx: 10, ry: 10 }); break;
       case "circle": shape = new Circle({ ...common, radius: 150 }); break;
@@ -145,7 +134,6 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         break;
       default: return;
     }
-
     centerItem(shape);
     c.add(shape);
     c.setActiveObject(shape);
@@ -153,13 +141,163 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     saveHistory();
   }, [saveHistory, centerItem]);
 
+  const addCustomFont = useCallback((name: string, family: string) => {
+    setCustomFonts(prev => {
+      if (prev.find(p => p.name === name)) return prev;
+      return [...prev, { name, family }];
+    });
+  }, []);
+
+  const loadSystemFonts = useCallback(async () => {
+    if (!('queryLocalFonts' in window)) {
+      alert("이 브라우저는 시스템 폰트 연동을 지원하지 않습니다. 최신 크롬/엣지를 사용해 주세요.");
+      return;
+    }
+    try {
+      // @ts-ignore
+      const localFonts = await window.queryLocalFonts();
+      const fontMap = new Map<string, CustomFont>();
+      
+      localFonts.forEach((f: any) => {
+        const cssName = f.fullName || f.family;
+        if (!fontMap.has(cssName)) {
+          fontMap.set(cssName, {
+            name: f.fullName || f.family,
+            family: cssName,
+            fullName: f.fullName,
+            postscriptName: f.postscriptName
+          });
+        }
+      });
+      
+      const systemFontList = Array.from(fontMap.values());
+      setCustomFonts(prev => {
+        const existingNames = new Set(prev.map(p => p.name.toLowerCase()));
+        const fresh = systemFontList.filter(f => !existingNames.has(f.name.toLowerCase()));
+        return [...prev, ...fresh];
+      });
+      alert(`${systemFontList.length}개의 시스템 폰트를 불러왔습니다!`);
+    } catch (e) {
+      alert("시스템 폰트 접근 권한이 필요합니다.");
+    }
+  }, []);
+
+  const copy = useCallback(async () => {
+    const c = canvasRef.current;
+    if (!c) return;
+    const active = c.getActiveObject();
+    if (active && !(active as any).isArtboard) {
+      const cloned = await active.clone();
+      clipboard.current = cloned;
+    }
+  }, []);
+
+  const paste = useCallback(async () => {
+    const c = canvasRef.current;
+    if (!c || !clipboard.current) return;
+    const cloned = await clipboard.current.clone();
+    c.discardActiveObject();
+    cloned.set({ left: (cloned.left || 0) + 20, top: (cloned.top || 0) + 20, evented: true });
+    if (cloned instanceof Group) {
+      cloned.canvas = c;
+      cloned.forEachObject((obj) => c.add(obj));
+      cloned.setCoords();
+    }
+    c.add(cloned);
+    c.setActiveObject(cloned);
+    c.renderAll();
+    saveHistory();
+  }, [saveHistory]);
+
+  const groupObjects = useCallback(() => {
+    const c = canvasRef.current;
+    if (!c) return;
+    const active = c.getActiveObject();
+    if (!active || active.type !== 'activeSelection') return;
+    (active as any).toGroup();
+    c.renderAll();
+    saveHistory();
+  }, [saveHistory]);
+
+  const ungroupObjects = useCallback(() => {
+    const c = canvasRef.current;
+    if (!c) return;
+    const active = c.getActiveObject();
+    if (!active || active.type !== 'group') return;
+    (active as any).toActiveSelection();
+    c.renderAll();
+    saveHistory();
+  }, [saveHistory]);
+
+  const alignObject = useCallback((type: string) => {
+    const c = canvasRef.current;
+    const obj = selectedObject;
+    if (!c || !obj) return;
+    const bounds = { left: -canvasWidth/2, top: -canvasHeight/2, right: canvasWidth/2, bottom: canvasHeight/2 };
+    switch(type) {
+      case "left": obj.set("left", bounds.left + (obj.width * obj.scaleX)/2); break;
+      case "center": obj.set("left", 0); break;
+      case "right": obj.set("left", bounds.right - (obj.width * obj.scaleX)/2); break;
+      case "top": obj.set("top", bounds.top + (obj.height * obj.scaleY)/2); break;
+      case "middle": obj.set("top", 0); break;
+      case "bottom": obj.set("top", bounds.bottom - (obj.height * obj.scaleY)/2); break;
+    }
+    obj.setCoords();
+    c.renderAll();
+    saveHistory();
+  }, [selectedObject, canvasWidth, canvasHeight, saveHistory]);
+
+  const resetDesign = useCallback(() => {
+    const c = canvasRef.current;
+    if (!c || !window.confirm("정말로 모든 디자인을 삭제하고 초기화하시겠습니까?")) return;
+    
+    // Remove everything EXCEPT the artboard
+    c.getObjects().forEach(obj => {
+      if (!(obj as any).isArtboard) {
+        c.remove(obj);
+      }
+    });
+
+    // Check if artboard still exists, if not, recreate it
+    let artboard = c.getObjects().find(o => (o as any).isArtboard);
+    if (!artboard) {
+      artboard = new Rect({
+        width: canvasWidth, height: canvasHeight,
+        left: 0, top: 0, originX: "center", originY: "center",
+        fill: "#ffffff", selectable: false, evented: false,
+        lockMovementX: true, lockMovementY: true, lockScalingX: true, lockScalingY: true, lockRotation: true,
+        hasControls: false, hasBorders: false,
+        shadow: new Shadow({ color: "rgba(0,0,0,0.8)", blur: 50, offsetX: 0, offsetY: 0 })
+      });
+      (artboard as any).isArtboard = true;
+      c.add(artboard);
+      c.sendObjectToBack(artboard);
+    }
+    
+    history.current = [];
+    redoStack.current = [];
+    localStorage.removeItem("ad-factory-last-design");
+    saveHistory();
+    c.renderAll();
+  }, [saveHistory, canvasWidth, canvasHeight]);
+
   const undo = useCallback(() => {
     const c = canvasRef.current;
     if (!c || history.current.length <= 1) return;
     const current = history.current.pop();
     if (current) redoStack.current.push(current);
     const last = history.current[history.current.length - 1];
-    if (last) c.loadFromJSON(last).then(() => c.renderAll());
+    if (last) c.loadFromJSON(last).then(() => {
+      const artboard = c.getObjects().find(o => (o as any).isArtboard);
+      if (artboard) { 
+        artboard.set({ 
+          selectable: false, evented: false, lockMovementX: true, lockMovementY: true, 
+          lockScalingX: true, lockScalingY: true, lockRotation: true, hasControls: false, hasBorders: false 
+        }); 
+        c.sendObjectToBack(artboard); 
+      }
+      c.renderAll();
+    });
   }, []);
 
   const redo = useCallback(() => {
@@ -168,19 +306,33 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     const next = redoStack.current.pop();
     if (next) {
       history.current.push(next);
-      c.loadFromJSON(next).then(() => c.renderAll());
+      c.loadFromJSON(next).then(() => {
+        const artboard = c.getObjects().find(o => (o as any).isArtboard);
+        if (artboard) { 
+          artboard.set({ 
+            selectable: false, evented: false, lockMovementX: true, lockMovementY: true, 
+            lockScalingX: true, lockScalingY: true, lockRotation: true, hasControls: false, hasBorders: false 
+          }); 
+          c.sendObjectToBack(artboard); 
+        }
+        c.renderAll();
+      });
     }
   }, []);
 
+  const contextValue = useMemo(() => ({
+    canvas, setCanvas, selectedObject, setSelectedObject, activeTab, setActiveTab,
+    zoom, setZoom, canvasWidth, setCanvasWidth, canvasHeight, setCanvasHeight,
+    customFonts, addCustomFont, addText, addImage, addShape, undo, redo, saveHistory,
+    copy, paste, groupObjects, ungroupObjects, alignObject, loadSystemFonts, resetDesign
+  }), [
+    canvas, setCanvas, selectedObject, activeTab, zoom, canvasWidth, canvasHeight, 
+    customFonts, addCustomFont, addText, addImage, addShape, undo, redo, saveHistory, copy, paste, 
+    groupObjects, ungroupObjects, alignObject, loadSystemFonts, resetDesign
+  ]);
+
   return (
-    <EditorContext.Provider 
-      value={{ 
-        canvas, setCanvas, selectedObject, setSelectedObject, activeTab, setActiveTab,
-        zoom, setZoom, canvasWidth, setCanvasWidth, canvasHeight, setCanvasHeight,
-        customFonts, addCustomFont,
-        addText, addImage, addShape, undo, redo, saveHistory
-      }}
-    >
+    <EditorContext.Provider value={contextValue}>
       {children}
     </EditorContext.Provider>
   );
