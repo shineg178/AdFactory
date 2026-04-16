@@ -186,7 +186,7 @@ var _s = __turbopack_context__.k.signature();
 ;
 function Navbar() {
     _s();
-    const { canvas, zoom, setZoom } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$editor$2f$EditorContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEditor"])();
+    const { canvas, zoom, setZoom, undo, redo } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$editor$2f$EditorContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEditor"])();
     const [isExporting, setIsExporting] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const exportCanvas = ()=>{
         if (!canvas) return;
@@ -205,13 +205,13 @@ function Navbar() {
     };
     const handleZoom = (newZoom)=>{
         if (!canvas) return;
-        const clampedZoom = Math.min(Math.max(newZoom, 0.1), 3);
+        const clampedZoom = Math.min(Math.max(newZoom, 0.1), 5);
         setZoom(clampedZoom);
         canvas.setZoom(clampedZoom);
         canvas.renderAll();
     };
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("nav", {
-        className: "flex items-center justify-between border-b border-zinc-200 bg-white px-6 py-3 dark:border-zinc-800 dark:bg-zinc-950 z-30",
+        className: "flex items-center justify-between border-b border-zinc-200 bg-white px-6 py-3 dark:border-zinc-800 dark:bg-zinc-950 z-30 shadow-sm",
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "flex items-center gap-6",
@@ -295,23 +295,23 @@ function Navbar() {
                                     className: "size-4"
                                 }, void 0, false, {
                                     fileName: "[project]/components/editor/Navbar.tsx",
-                                    lineNumber: 64,
+                                    lineNumber: 65,
                                     columnNumber: 14
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/editor/Navbar.tsx",
-                                lineNumber: 60,
+                                lineNumber: 61,
                                 columnNumber: 12
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                className: "text-xs font-bold text-zinc-600 dark:text-zinc-400 min-w-[40px] text-center",
+                                className: "text-xs font-bold text-zinc-600 dark:text-zinc-400 min-w-[40px] text-center font-mono",
                                 children: [
                                     Math.round(zoom * 100),
                                     "%"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/editor/Navbar.tsx",
-                                lineNumber: 66,
+                                lineNumber: 67,
                                 columnNumber: 12
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -321,57 +321,59 @@ function Navbar() {
                                     className: "size-4"
                                 }, void 0, false, {
                                     fileName: "[project]/components/editor/Navbar.tsx",
-                                    lineNumber: 73,
+                                    lineNumber: 74,
                                     columnNumber: 14
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/editor/Navbar.tsx",
-                                lineNumber: 69,
+                                lineNumber: 70,
                                 columnNumber: 12
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/editor/Navbar.tsx",
-                        lineNumber: 59,
+                        lineNumber: 60,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "flex items-center gap-1.5",
+                        className: "flex items-center gap-1.5 border-l border-zinc-100 dark:border-zinc-800 pl-4 ml-1",
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                onClick: ()=>canvas?.undo?.(),
+                                onClick: undo,
+                                title: "실행 취소 (Ctrl+Z)",
                                 className: "rounded-lg p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$undo$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Undo$3e$__["Undo"], {
                                     className: "size-4"
                                 }, void 0, false, {
                                     fileName: "[project]/components/editor/Navbar.tsx",
-                                    lineNumber: 82,
+                                    lineNumber: 85,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/editor/Navbar.tsx",
-                                lineNumber: 78,
+                                lineNumber: 80,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                onClick: ()=>canvas?.redo?.(),
+                                onClick: redo,
+                                title: "다시 실행 (Ctrl+Shift+Z)",
                                 className: "rounded-lg p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$redo$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Redo$3e$__["Redo"], {
                                     className: "size-4"
                                 }, void 0, false, {
                                     fileName: "[project]/components/editor/Navbar.tsx",
-                                    lineNumber: 88,
+                                    lineNumber: 92,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/editor/Navbar.tsx",
-                                lineNumber: 84,
+                                lineNumber: 87,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/editor/Navbar.tsx",
-                        lineNumber: 77,
+                        lineNumber: 79,
                         columnNumber: 9
                     }, this)
                 ]
@@ -384,13 +386,13 @@ function Navbar() {
                 className: "flex items-center gap-4",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "hidden md:flex items-center px-3 py-1.5 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 mr-2",
+                        className: "hidden lg:flex items-center px-3 py-1.5 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 mr-2",
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "size-2 rounded-full bg-green-500 animate-pulse mr-2"
                             }, void 0, false, {
                                 fileName: "[project]/components/editor/Navbar.tsx",
-                                lineNumber: 95,
+                                lineNumber: 99,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -398,13 +400,13 @@ function Navbar() {
                                 children: "자동 저장됨"
                             }, void 0, false, {
                                 fileName: "[project]/components/editor/Navbar.tsx",
-                                lineNumber: 96,
+                                lineNumber: 100,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/editor/Navbar.tsx",
-                        lineNumber: 94,
+                        lineNumber: 98,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -414,14 +416,14 @@ function Navbar() {
                                 className: "size-4"
                             }, void 0, false, {
                                 fileName: "[project]/components/editor/Navbar.tsx",
-                                lineNumber: 100,
+                                lineNumber: 104,
                                 columnNumber: 11
                             }, this),
                             "저장"
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/editor/Navbar.tsx",
-                        lineNumber: 99,
+                        lineNumber: 103,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -433,26 +435,26 @@ function Navbar() {
                                 className: "size-4 animate-spin"
                             }, void 0, false, {
                                 fileName: "[project]/components/editor/Navbar.tsx",
-                                lineNumber: 110,
+                                lineNumber: 114,
                                 columnNumber: 13
                             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$download$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Download$3e$__["Download"], {
                                 className: "size-4"
                             }, void 0, false, {
                                 fileName: "[project]/components/editor/Navbar.tsx",
-                                lineNumber: 112,
+                                lineNumber: 116,
                                 columnNumber: 13
                             }, this),
                             isExporting ? "내보내는 중..." : "PNG 다운로드"
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/editor/Navbar.tsx",
-                        lineNumber: 104,
+                        lineNumber: 108,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/editor/Navbar.tsx",
-                lineNumber: 93,
+                lineNumber: 97,
                 columnNumber: 7
             }, this)
         ]
@@ -462,7 +464,7 @@ function Navbar() {
         columnNumber: 5
     }, this);
 }
-_s(Navbar, "h1dCOPS0LerwwcBR212mfPZxeUo=", false, function() {
+_s(Navbar, "K9o5YU6BW2yMIhYVDLu3nVFuNu8=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$editor$2f$EditorContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEditor"]
     ];
@@ -517,17 +519,21 @@ var _s = __turbopack_context__.k.signature();
 ;
 function Sidebar() {
     _s();
-    const { activeTab, setActiveTab } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$editor$2f$EditorContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEditor"])();
+    const editor = (0, __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$editor$2f$EditorContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEditor"])();
+    if (!editor) return null; // Safety check
+    const { activeTab, setActiveTab } = editor;
     const tools = [
         {
             id: "select",
             icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$mouse$2d$pointer$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__MousePointer2$3e$__["MousePointer2"],
-            label: "선택"
+            label: "선택",
+            shortcut: "V"
         },
         {
             id: "text",
             icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$type$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Type$3e$__["Type"],
-            label: "텍스트"
+            label: "텍스트",
+            shortcut: "T"
         },
         {
             id: "image",
@@ -552,63 +558,74 @@ function Sidebar() {
         }
     ];
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("aside", {
-        className: "flex w-16 flex-col items-center border-r border-zinc-200 bg-white py-4 dark:border-zinc-800 dark:bg-zinc-950 z-20",
+        className: "flex w-16 flex-col items-center border-r border-zinc-200 bg-white py-4 dark:border-zinc-800 dark:bg-zinc-950 z-20 shadow-sm",
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "flex flex-1 flex-col gap-4",
                 children: tools.map((tool)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                        title: tool.label,
+                        title: `${tool.label} ${tool.shortcut ? `(${tool.shortcut})` : ""}`,
                         onClick: ()=>setActiveTab(tool.id),
-                        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("group relative flex size-10 items-center justify-center rounded-xl transition-all", activeTab === tool.id ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950" : tool.highlight ? "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:hover:bg-indigo-500/20" : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"),
+                        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("group relative flex size-11 items-center justify-center rounded-xl transition-all duration-200", activeTab === tool.id ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-md" : tool.highlight ? "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:hover:bg-indigo-500/20" : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"),
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(tool.icon, {
                                 className: "size-5"
                             }, void 0, false, {
                                 fileName: "[project]/components/editor/Sidebar.tsx",
-                                lineNumber: 46,
+                                lineNumber: 50,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "absolute left-14 hidden rounded-md bg-zinc-900 px-2 py-1 text-xs text-white group-hover:block dark:bg-zinc-100 dark:text-zinc-950 shadow-xl whitespace-nowrap z-50",
-                                children: tool.label
-                            }, void 0, false, {
+                                className: "absolute left-14 hidden rounded-md bg-zinc-900 px-3 py-1.5 text-xs text-white group-hover:block dark:bg-zinc-100 dark:text-zinc-950 shadow-xl whitespace-nowrap z-50 animate-in fade-in slide-in-from-left-1",
+                                children: [
+                                    tool.label,
+                                    " ",
+                                    tool.shortcut && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "ml-2 text-[10px] opacity-50",
+                                        children: tool.shortcut
+                                    }, void 0, false, {
+                                        fileName: "[project]/components/editor/Sidebar.tsx",
+                                        lineNumber: 54,
+                                        columnNumber: 46
+                                    }, this)
+                                ]
+                            }, void 0, true, {
                                 fileName: "[project]/components/editor/Sidebar.tsx",
-                                lineNumber: 49,
+                                lineNumber: 53,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, tool.id, true, {
                         fileName: "[project]/components/editor/Sidebar.tsx",
-                        lineNumber: 33,
+                        lineNumber: 37,
                         columnNumber: 11
                     }, this))
             }, void 0, false, {
                 fileName: "[project]/components/editor/Sidebar.tsx",
-                lineNumber: 31,
+                lineNumber: 35,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                className: "flex size-10 items-center justify-center rounded-xl text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100",
+                className: "flex size-11 items-center justify-center rounded-xl text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100 transition-colors",
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$settings$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Settings$3e$__["Settings"], {
                     className: "size-5"
                 }, void 0, false, {
                     fileName: "[project]/components/editor/Sidebar.tsx",
-                    lineNumber: 57,
+                    lineNumber: 61,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/components/editor/Sidebar.tsx",
-                lineNumber: 56,
+                lineNumber: 60,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/editor/Sidebar.tsx",
-        lineNumber: 30,
+        lineNumber: 34,
         columnNumber: 5
     }, this);
 }
-_s(Sidebar, "w7gXa76Cf8nlJtVj+wSKSgGKTPU=", false, function() {
+_s(Sidebar, "t0rsU/t1p+LiVrRpHUSgNnV9Lz4=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$editor$2f$EditorContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEditor"]
     ];
@@ -1255,7 +1272,7 @@ function Canvas() {
     _s();
     const canvasRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
     const containerRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
-    const { setCanvas, setSelectedObject, setZoom } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$editor$2f$EditorContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEditor"])();
+    const { setCanvas, setSelectedObject, setZoom, zoom, undo, redo, saveHistory, setActiveTab } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$editor$2f$EditorContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEditor"])();
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "Canvas.useEffect": ()=>{
             if (!canvasRef.current || !containerRef.current) return;
@@ -1283,7 +1300,12 @@ function Canvas() {
                     setSelectedObject(null);
                 }
             }["Canvas.useEffect"]);
-            // Control point styling for all objects
+            fabricCanvas.on("object:modified", {
+                "Canvas.useEffect": ()=>{
+                    saveHistory();
+                }
+            }["Canvas.useEffect"]);
+            // Control point styling
             __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$fabric$2f$dist$2f$index$2e$min$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FabricObject"].prototype.set({
                 cornerColor: "#4f46e5",
                 cornerStyle: "circle",
@@ -1292,24 +1314,88 @@ function Canvas() {
                 transparentCorners: false,
                 padding: 5
             });
-            // Initial Content (Korean)
-            const title = new __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$fabric$2f$dist$2f$index$2e$min$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FabricText"]("제품 제목을 입력하세요", {
+            // --- 1. Ctrl + Scroll Zoom Logic ---
+            fabricCanvas.on("mouse:wheel", {
+                "Canvas.useEffect": (opt)=>{
+                    if (!opt.e.ctrlKey) return; // Only zoom when Ctrl is pressed
+                    const delta = opt.e.deltaY;
+                    let newZoom = fabricCanvas.getZoom();
+                    newZoom *= 0.999 ** delta;
+                    if (newZoom > 5) newZoom = 5;
+                    if (newZoom < 0.1) newZoom = 0.1;
+                    fabricCanvas.zoomToPoint({
+                        x: opt.e.offsetX,
+                        y: opt.e.offsetY
+                    }, newZoom);
+                    setZoom(newZoom);
+                    opt.e.preventDefault();
+                    opt.e.stopPropagation();
+                }
+            }["Canvas.useEffect"]);
+            // Initial Content
+            const title = new __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$fabric$2f$dist$2f$index$2e$min$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Textbox"]("제품 제목을 입력하세요", {
                 left: 80,
                 top: 100,
                 fontSize: 52,
                 fill: "#111111",
-                fontWeight: "bold"
+                fontWeight: "bold",
+                width: 640
             });
-            const subtitle = new __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$fabric$2f$dist$2f$index$2e$min$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FabricText"]("메인 특징이나 할인 혜택을 적어주세요", {
+            const subtitle = new __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$fabric$2f$dist$2f$index$2e$min$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Textbox"]("메인 특징이나 할인 혜택을 적어주세요", {
                 left: 80,
                 top: 180,
                 fontSize: 26,
-                fill: "#666666"
+                fill: "#666666",
+                width: 640
             });
             fabricCanvas.add(title, subtitle);
             fabricCanvas.renderAll();
+            // Initial History Save
+            const initialJson = JSON.stringify(fabricCanvas.toDatalessJSON());
+            // We can't easily call saveHistory here because it closure-captures 'canvas' from context which isn't set yet.
+            // But setting it in context will make next calls work.
+            // --- 2. Keyboard Shortcuts (Photoshop-like) ---
+            const handleKeyDown = {
+                "Canvas.useEffect.handleKeyDown": (e)=>{
+                    // Don't trigger shortcuts if user is typing in an input or fabric textbox
+                    const activeElement = document.activeElement;
+                    const isInput = activeElement.tagName === "INPUT" || activeElement.tagName === "TEXTAREA";
+                    const isEditingFabric = fabricCanvas.getActiveObject()?.isEditing;
+                    if (isInput || isEditingFabric) return;
+                    // Delete Key
+                    if (e.key === "Delete" || e.key === "Backspace") {
+                        const activeObjects = fabricCanvas.getActiveObjects();
+                        if (activeObjects.length > 0) {
+                            fabricCanvas.remove(...activeObjects);
+                            fabricCanvas.discardActiveObject();
+                            fabricCanvas.renderAll();
+                            saveHistory();
+                        }
+                    }
+                    // Undo (Ctrl+Z)
+                    if (e.ctrlKey && e.key === "z") {
+                        e.preventDefault();
+                        undo();
+                    }
+                    // Redo (Ctrl+Shift+Z or Ctrl+Y)
+                    if (e.ctrlKey && e.shiftKey && e.key === "Z" || e.ctrlKey && e.key === "y") {
+                        e.preventDefault();
+                        redo();
+                    }
+                    // V: Selection Tool
+                    if (e.key.toLowerCase() === "v") {
+                        setActiveTab("select");
+                    }
+                    // T: Text Tool
+                    if (e.key.toLowerCase() === "t") {
+                        setActiveTab("text");
+                    }
+                }
+            }["Canvas.useEffect.handleKeyDown"];
+            window.addEventListener("keydown", handleKeyDown);
             return ({
                 "Canvas.useEffect": ()=>{
+                    window.removeEventListener("keydown", handleKeyDown);
                     fabricCanvas.dispose();
                     setCanvas(null);
                 }
@@ -1317,24 +1403,29 @@ function Canvas() {
         }
     }["Canvas.useEffect"], [
         setCanvas,
-        setSelectedObject
+        setSelectedObject,
+        setZoom,
+        undo,
+        redo,
+        saveHistory,
+        setActiveTab
     ]);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         ref: containerRef,
         className: "relative flex-1 overflow-auto bg-zinc-100 dark:bg-zinc-900 shadow-inner flex items-center justify-center p-12 custom-scrollbar",
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "bg-white shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-none border border-zinc-200 dark:border-zinc-800 rounded-sm transition-shadow hover:shadow-[0_30px_60px_rgba(0,0,0,0.15)]",
+                className: "bg-white shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-none border border-zinc-200 dark:border-zinc-800 rounded-sm",
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("canvas", {
                     ref: canvasRef
                 }, void 0, false, {
                     fileName: "[project]/components/editor/Canvas.tsx",
-                    lineNumber: 77,
+                    lineNumber: 151,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/components/editor/Canvas.tsx",
-                lineNumber: 76,
+                lineNumber: 150,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1344,10 +1435,10 @@ function Canvas() {
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                             className: "text-[10px] font-black text-zinc-400 uppercase tracking-widest",
-                            children: "Canvas Resolution"
+                            children: "캔버스 해상도"
                         }, void 0, false, {
                             fileName: "[project]/components/editor/Canvas.tsx",
-                            lineNumber: 83,
+                            lineNumber: 157,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1355,28 +1446,28 @@ function Canvas() {
                             children: "800 x 800 px"
                         }, void 0, false, {
                             fileName: "[project]/components/editor/Canvas.tsx",
-                            lineNumber: 84,
+                            lineNumber: 158,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/editor/Canvas.tsx",
-                    lineNumber: 82,
+                    lineNumber: 156,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/components/editor/Canvas.tsx",
-                lineNumber: 81,
+                lineNumber: 155,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/editor/Canvas.tsx",
-        lineNumber: 75,
+        lineNumber: 149,
         columnNumber: 5
     }, this);
 }
-_s(Canvas, "s+CwZ01MAuxmOYzul5N4bKGaSq4=", false, function() {
+_s(Canvas, "od80yzF62dYfnCUKPScAavYtuMI=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$editor$2f$EditorContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEditor"]
     ];

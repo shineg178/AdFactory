@@ -3,10 +3,10 @@
 import { Download, Save, Undo, Redo, Share2, Loader2, Search, ZoomIn, ZoomOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEditor } from "./EditorContext";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function Navbar() {
-  const { canvas, zoom, setZoom } = useEditor();
+  const { canvas, zoom, setZoom, undo, redo } = useEditor();
   const [isExporting, setIsExporting] = useState(false);
 
   const exportCanvas = () => {
@@ -29,14 +29,14 @@ export default function Navbar() {
 
   const handleZoom = (newZoom: number) => {
     if (!canvas) return;
-    const clampedZoom = Math.min(Math.max(newZoom, 0.1), 3);
+    const clampedZoom = Math.min(Math.max(newZoom, 0.1), 5);
     setZoom(clampedZoom);
     canvas.setZoom(clampedZoom);
     canvas.renderAll();
   };
 
   return (
-    <nav className="flex items-center justify-between border-b border-zinc-200 bg-white px-6 py-3 dark:border-zinc-800 dark:bg-zinc-950 z-30">
+    <nav className="flex items-center justify-between border-b border-zinc-200 bg-white px-6 py-3 dark:border-zinc-800 dark:bg-zinc-950 z-30 shadow-sm">
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-3">
           <div className="size-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
@@ -56,6 +56,7 @@ export default function Navbar() {
         
         <div className="h-8 w-px bg-zinc-100 dark:bg-zinc-800" />
         
+        {/* Zoom Controls */}
         <div className="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-900 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800">
            <button 
              onClick={() => handleZoom(zoom - 0.1)}
@@ -63,7 +64,7 @@ export default function Navbar() {
            >
              <ZoomOut className="size-4" />
            </button>
-           <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400 min-w-[40px] text-center">
+           <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400 min-w-[40px] text-center font-mono">
              {Math.round(zoom * 100)}%
            </span>
            <button 
@@ -74,15 +75,18 @@ export default function Navbar() {
            </button>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        {/* Undo/Redo */}
+        <div className="flex items-center gap-1.5 border-l border-zinc-100 dark:border-zinc-800 pl-4 ml-1">
           <button 
-            onClick={() => canvas?.undo?.()}
+            onClick={undo}
+            title="실행 취소 (Ctrl+Z)"
             className="rounded-lg p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
           >
             <Undo className="size-4" />
           </button>
           <button 
-             onClick={() => canvas?.redo?.()}
+             onClick={redo}
+             title="다시 실행 (Ctrl+Shift+Z)"
              className="rounded-lg p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
           >
             <Redo className="size-4" />
@@ -91,7 +95,7 @@ export default function Navbar() {
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="hidden md:flex items-center px-3 py-1.5 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 mr-2">
+        <div className="hidden lg:flex items-center px-3 py-1.5 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 mr-2">
           <div className="size-2 rounded-full bg-green-500 animate-pulse mr-2" />
           <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">자동 저장됨</span>
         </div>
