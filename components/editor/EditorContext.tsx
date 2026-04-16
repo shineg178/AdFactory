@@ -3,7 +3,13 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useRef, useMemo, useEffect } from "react";
 import { Canvas, FabricObject, Textbox, FabricImage, Rect, Circle, Triangle, Polygon, Group, Shadow } from "fabric";
 
-type TabType = "select" | "text" | "image" | "shape" | "ai" | "layers";
+type TabType = "select" | "text" | "image" | "shape" | "ai" | "layers" | "templates";
+
+export interface TemplateInfo {
+  id: string;
+  name: string;
+  data: string;
+}
 
 interface CustomFont {
   name: string;
@@ -40,6 +46,11 @@ interface EditorContextType {
   alignObject: (type: "left" | "center" | "right" | "top" | "middle" | "bottom") => void;
   loadSystemFonts: () => Promise<void>;
   resetDesign: () => void;
+  setArtboardColor: (color: string) => void;
+  templates: TemplateInfo[];
+  addPlaceholder: (type: "image" | "title" | "description", label: string) => void;
+  saveTemplate: (name: string) => void;
+  loadTemplate: (id: string) => void;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -48,19 +59,26 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [canvas, _setCanvas] = useState<Canvas | null>(null);
   const canvasRef = useRef<Canvas | null>(null);
   const clipboard = useRef<FabricObject | null>(null);
-  
+
   const [selectedObject, setSelectedObject] = useState<FabricObject | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("select");
   const [zoom, setZoom] = useState(1);
   const [canvasWidth, setCanvasWidth] = useState(1080);
   const [canvasHeight, setCanvasHeight] = useState(1080);
-  
+
   const [customFonts, setCustomFonts] = useState<CustomFont[]>([
     { name: "Pretendard", family: "Pretendard, -apple-system, sans-serif" },
     { name: "Gmarket Sans", family: "GmarketSansMedium, sans-serif" },
     { name: "나눔고딕", family: "Nanum Gothic, sans-serif" },
   ]);
-  
+
+  const [templates, setTemplates] = useState<TemplateInfo[]>([]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("ad-factory-templates");
+    if (saved) setTemplates(JSON.parse(saved));
+  }, []);
+
   const history = useRef<string[]>([]);
   const redoStack = useRef<string[]>([]);
 
@@ -78,7 +96,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       if (history.current[history.current.length - 1] === json) return;
       history.current.push(json);
       if (history.current.length > 50) history.current.shift();
-      redoStack.current = []; 
+      redoStack.current = [];
       localStorage.setItem("ad-factory-last-design", json);
       localStorage.setItem("ad-factory-canvas-config", JSON.stringify({ canvasWidth, canvasHeight }));
     } catch (e) { console.error(e); }
@@ -92,7 +110,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     const c = canvasRef.current;
     if (!c) return;
     const fabricText = new Textbox(text, {
-      fontSize: 80, fill: "#111111", width: 600, 
+      fontSize: 80, fill: "#111111", width: 600,
       fontFamily: "Pretendard", textAlign: "center",
       cornerColor: "#6366f1", cornerStyle: "circle", transparentCorners: false,
       ...options
@@ -127,7 +145,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       case "rect": shape = new Rect({ ...common, width: 300, height: 300, rx: 10, ry: 10 }); break;
       case "circle": shape = new Circle({ ...common, radius: 150 }); break;
       case "triangle": shape = new Triangle({ ...common, width: 300, height: 300 }); break;
-      case "star": 
+      case "star":
         shape = new Polygon([
           { x: 100, y: 10 }, { x: 40, y: 198 }, { x: 190, y: 78 }, { x: 10, y: 78 }, { x: 160, y: 198 }
         ], { ...common });
@@ -140,6 +158,68 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     c.renderAll();
     saveHistory();
   }, [saveHistory, centerItem]);
+
+  const addPlaceholder = useCallback((type: "image" | "title" | "description", label: string) => {
+    const c = canvasRef.current;
+    if (!c) return;
+
+    let placeholder: FabricObject;
+    if (type === "image") {
+      placeholder = new Rect({ width: 300, height: 300, fill: "#e4e4e7", stroke: "#a1a1aa", strokeWidth: 2, strokeDashArray: [10, 5], rx: 10, ry: 10 });
+    } else {
+      placeholder = new Textbox(label, { fontSize: type === "title" ? 60 : 30, fontWeight: type === "title" ? "bold" : "normal", fill: "#a1a1aa", width: 400, fontFamily: "Pretendard", textAlign: "center" });
+    }
+
+    (placeholder as any).isPlaceholder = true;
+    (placeholder as any).placeholderType = type;
+    (placeholder as any).placeholderLabel = label;
+
+    centerItem(placeholder);
+    c.add(placeholder);
+    c.setActiveObject(placeholder);
+    c.renderAll();
+    saveHistory();
+  }, [centerItem, saveHistory]);
+
+  const saveTemplate = useCallback((name: string) => {
+    const c = canvasRef.current;
+    if (!c) return;
+    const data = JSON.stringify((c as any).toJSON(['isArtboard', 'isPlaceholder', 'placeholderType', 'placeholderLabel']));
+    const newTemplate = { id: Date.now().toString(), name, data };
+
+    setTemplates(prev => {
+      const updated = [...prev, newTemplate];
+      localStorage.setItem("ad-factory-templates", JSON.stringify(updated));
+      return updated;
+    });
+    alert(`템플릿 '${name}'이(가) 저장되었습니다!`);
+  }, []);
+
+  const loadTemplate = useCallback((id: string) => {
+    const template = templates.find(t => t.id === id);
+    if (!template || !canvasRef.current) return;
+    if (!window.confirm(`템플릿 '${template.name}'을(를) 불러오시겠습니까? 현재 디자인은 지워집니다.`)) return;
+
+    const c = canvasRef.current;
+    c.loadFromJSON(template.data).then(() => {
+      c.getObjects().forEach(obj => {
+        const isArtboard = (obj as any).isArtboard;
+        const isPlaceholder = (obj as any).isPlaceholder;
+
+        if (isArtboard) {
+          obj.set({ selectable: false, evented: false, lockMovementX: true, lockMovementY: true, lockScalingX: true, lockScalingY: true, lockRotation: true, hasControls: false });
+          c.sendObjectToBack(obj);
+        } else if (!isPlaceholder) {
+          obj.set({ selectable: false, evented: false, lockMovementX: true, lockMovementY: true, lockScalingX: true, lockScalingY: true, lockRotation: true, hasControls: false });
+        }
+        // If it's a placeholder, it remains fully editable.
+      });
+      c.renderAll();
+      history.current = [template.data];
+      redoStack.current = [];
+      localStorage.setItem("ad-factory-last-design", template.data);
+    });
+  }, [templates]);
 
   const addCustomFont = useCallback((name: string, family: string) => {
     setCustomFonts(prev => {
@@ -157,7 +237,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       // @ts-ignore
       const localFonts = await window.queryLocalFonts();
       const fontMap = new Map<string, CustomFont>();
-      
+
       localFonts.forEach((f: any) => {
         const cssName = f.fullName || f.family;
         if (!fontMap.has(cssName)) {
@@ -169,7 +249,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
           });
         }
       });
-      
+
       const systemFontList = Array.from(fontMap.values());
       setCustomFonts(prev => {
         const existingNames = new Set(prev.map(p => p.name.toLowerCase()));
@@ -233,24 +313,35 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     const c = canvasRef.current;
     const obj = selectedObject;
     if (!c || !obj) return;
-    const bounds = { left: -canvasWidth/2, top: -canvasHeight/2, right: canvasWidth/2, bottom: canvasHeight/2 };
-    switch(type) {
-      case "left": obj.set("left", bounds.left + (obj.width * obj.scaleX)/2); break;
+    const bounds = { left: -canvasWidth / 2, top: -canvasHeight / 2, right: canvasWidth / 2, bottom: canvasHeight / 2 };
+    switch (type) {
+      case "left": obj.set("left", bounds.left + (obj.width * obj.scaleX) / 2); break;
       case "center": obj.set("left", 0); break;
-      case "right": obj.set("left", bounds.right - (obj.width * obj.scaleX)/2); break;
-      case "top": obj.set("top", bounds.top + (obj.height * obj.scaleY)/2); break;
+      case "right": obj.set("left", bounds.right - (obj.width * obj.scaleX) / 2); break;
+      case "top": obj.set("top", bounds.top + (obj.height * obj.scaleY) / 2); break;
       case "middle": obj.set("top", 0); break;
-      case "bottom": obj.set("top", bounds.bottom - (obj.height * obj.scaleY)/2); break;
+      case "bottom": obj.set("top", bounds.bottom - (obj.height * obj.scaleY) / 2); break;
     }
     obj.setCoords();
     c.renderAll();
     saveHistory();
   }, [selectedObject, canvasWidth, canvasHeight, saveHistory]);
 
+  const setArtboardColor = useCallback((color: string) => {
+    const c = canvasRef.current;
+    if (!c) return;
+    const artboard = c.getObjects().find(o => (o as any).isArtboard);
+    if (artboard) {
+      artboard.set("fill", color);
+      c.renderAll();
+      saveHistory();
+    }
+  }, [saveHistory]);
+
   const resetDesign = useCallback(() => {
     const c = canvasRef.current;
     if (!c || !window.confirm("정말로 모든 디자인을 삭제하고 초기화하시겠습니까?")) return;
-    
+
     // Remove everything EXCEPT the artboard
     c.getObjects().forEach(obj => {
       if (!(obj as any).isArtboard) {
@@ -273,7 +364,7 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       c.add(artboard);
       c.sendObjectToBack(artboard);
     }
-    
+
     history.current = [];
     redoStack.current = [];
     localStorage.removeItem("ad-factory-last-design");
@@ -289,12 +380,12 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     const last = history.current[history.current.length - 1];
     if (last) c.loadFromJSON(last).then(() => {
       const artboard = c.getObjects().find(o => (o as any).isArtboard);
-      if (artboard) { 
-        artboard.set({ 
-          selectable: false, evented: false, lockMovementX: true, lockMovementY: true, 
-          lockScalingX: true, lockScalingY: true, lockRotation: true, hasControls: false, hasBorders: false 
-        }); 
-        c.sendObjectToBack(artboard); 
+      if (artboard) {
+        artboard.set({
+          selectable: false, evented: false, lockMovementX: true, lockMovementY: true,
+          lockScalingX: true, lockScalingY: true, lockRotation: true, hasControls: false, hasBorders: false
+        });
+        c.sendObjectToBack(artboard);
       }
       c.renderAll();
     });
@@ -308,12 +399,12 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       history.current.push(next);
       c.loadFromJSON(next).then(() => {
         const artboard = c.getObjects().find(o => (o as any).isArtboard);
-        if (artboard) { 
-          artboard.set({ 
-            selectable: false, evented: false, lockMovementX: true, lockMovementY: true, 
-            lockScalingX: true, lockScalingY: true, lockRotation: true, hasControls: false, hasBorders: false 
-          }); 
-          c.sendObjectToBack(artboard); 
+        if (artboard) {
+          artboard.set({
+            selectable: false, evented: false, lockMovementX: true, lockMovementY: true,
+            lockScalingX: true, lockScalingY: true, lockRotation: true, hasControls: false, hasBorders: false
+          });
+          c.sendObjectToBack(artboard);
         }
         c.renderAll();
       });
@@ -324,11 +415,13 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     canvas, setCanvas, selectedObject, setSelectedObject, activeTab, setActiveTab,
     zoom, setZoom, canvasWidth, setCanvasWidth, canvasHeight, setCanvasHeight,
     customFonts, addCustomFont, addText, addImage, addShape, undo, redo, saveHistory,
-    copy, paste, groupObjects, ungroupObjects, alignObject, loadSystemFonts, resetDesign
+    copy, paste, groupObjects, ungroupObjects, alignObject, loadSystemFonts, resetDesign,
+    setArtboardColor, templates, addPlaceholder, saveTemplate, loadTemplate
   }), [
-    canvas, setCanvas, selectedObject, activeTab, zoom, canvasWidth, canvasHeight, 
-    customFonts, addCustomFont, addText, addImage, addShape, undo, redo, saveHistory, copy, paste, 
-    groupObjects, ungroupObjects, alignObject, loadSystemFonts, resetDesign
+    canvas, setCanvas, selectedObject, activeTab, zoom, canvasWidth, canvasHeight,
+    customFonts, addCustomFont, addText, addImage, addShape, undo, redo, saveHistory, copy, paste,
+    groupObjects, ungroupObjects, alignObject, loadSystemFonts, resetDesign,
+    setArtboardColor, templates, addPlaceholder, saveTemplate, loadTemplate
   ]);
 
   return (

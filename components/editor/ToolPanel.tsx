@@ -1,7 +1,7 @@
 "use client";
 
 import { useEditor } from "./EditorContext";
-import { Sparkles, Type, Image as ImageIcon, Plus, Wand2, Loader2, Check, AlertCircle, Shapes, Upload, X } from "lucide-react";
+import { Sparkles, Type, Image as ImageIcon, Plus, Wand2, Loader2, Check, AlertCircle, Shapes, Upload, X, LayoutTemplate, Save, ImagePlus, Type as TypeIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useRef } from "react";
 
@@ -12,9 +12,10 @@ interface AdCopy {
 }
 
 export default function ToolPanel() {
-  const { activeTab, setActiveTab, addText, addImage, addShape } = useEditor();
+  const { activeTab, setActiveTab, addText, addImage, addShape, templates, saveTemplate, loadTemplate, addPlaceholder } = useEditor();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  const [templateName, setTemplateName] = useState("");
   const [aiPrompt, setAiPrompt] = useState("");
   const [target, setTarget] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -71,6 +72,7 @@ export default function ToolPanel() {
           {activeTab === "shape" && <><Shapes className="size-4" /> 도형</>}
           {activeTab === "image" && <><ImageIcon className="size-4" /> 이미지 에셋</>}
           {activeTab === "ai" && <><Sparkles className="size-4 text-indigo-500" /> AI 어시스턴트</>}
+          {activeTab === "templates" && <><LayoutTemplate className="size-4 text-amber-500" /> 캔버스 템플릿</>}
         </h3>
         <button 
           onClick={() => setActiveTab("select")}
@@ -152,6 +154,58 @@ export default function ToolPanel() {
                   <img src={url} className="w-full h-full object-cover" />
                 </button>
               ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "templates" && (
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <h3 className="text-[10px] font-bold text-zinc-400 border-b border-zinc-100 pb-2 uppercase tracking-widest">내 템플릿 보관함</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {templates.map(t => (
+                  <button key={t.id} onClick={() => loadTemplate(t.id)} className="aspect-video bg-zinc-50 border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800 rounded-xl hover:border-amber-500 hover:bg-amber-50 transition-all flex items-center justify-center p-3">
+                    <span className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300 line-clamp-2 text-center">{t.name}</span>
+                  </button>
+                ))}
+                {templates.length === 0 && (
+                  <div className="col-span-2 text-center py-6 text-xs text-zinc-400 bg-zinc-50 border border-dashed border-zinc-200 rounded-xl">저장된 템플릿이 없습니다.</div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-[10px] font-bold text-zinc-400 border-b border-zinc-100 pb-2 uppercase tracking-widest">템플릿 제약 요소 추가</h3>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => addPlaceholder("image", "이미지 영역")} className="flex flex-col items-center justify-center p-3 rounded-lg border border-zinc-200 hover:border-indigo-400 hover:bg-indigo-50 transition-colors gap-2">
+                  <ImagePlus className="size-4 text-indigo-400" />
+                  <span className="text-[10px] font-bold text-zinc-600">이미지 박스</span>
+                </button>
+                <button onClick={() => addPlaceholder("title", "메인 제목")} className="flex flex-col items-center justify-center p-3 rounded-lg border border-zinc-200 hover:border-indigo-400 hover:bg-indigo-50 transition-colors gap-2">
+                  <TypeIcon className="size-4 text-indigo-400" />
+                  <span className="text-[10px] font-bold text-zinc-600">메인 제목</span>
+                </button>
+                <button onClick={() => addPlaceholder("description", "설명")} className="col-span-2 flex items-center justify-center p-3 rounded-lg border border-zinc-200 hover:border-indigo-400 hover:bg-indigo-50 transition-colors gap-2">
+                  <TypeIcon className="size-4 text-indigo-400" />
+                  <span className="text-[10px] font-bold text-zinc-600">서브 설명구</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-2xl p-4 space-y-3">
+              <label className="text-[10px] font-black text-amber-700 dark:text-amber-500 uppercase">현재 상태 저장</label>
+              <input 
+                type="text" 
+                value={templateName} onChange={e => setTemplateName(e.target.value)} 
+                placeholder="새 템플릿 이름..." 
+                className="w-full bg-white dark:bg-zinc-950 border border-amber-200 dark:border-zinc-800 rounded-lg p-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-amber-500"
+              />
+              <button 
+                onClick={() => { if(templateName) { saveTemplate(templateName); setTemplateName(""); } }} disabled={!templateName}
+                className="w-full flex items-center justify-center gap-2 bg-zinc-900 hover:bg-amber-600 text-white rounded-lg py-2.5 text-xs font-black transition-all disabled:opacity-50"
+              >
+                <Save className="size-3" /> 내 템플릿 만들기
+              </button>
             </div>
           </div>
         )}

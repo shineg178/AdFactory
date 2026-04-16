@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { Canvas as FabricCanvas, Point, Textbox, FabricObject, Rect, Shadow } from "fabric";
+import { Canvas as FabricCanvas, Point, Textbox, FabricObject, Rect, Shadow, FabricImage } from "fabric";
 import { useEditor } from "./EditorContext";
 
 export default function Canvas() {
@@ -17,6 +17,16 @@ export default function Canvas() {
   const lastX = useRef(0);
   const lastY = useRef(0);
   const spacePressed = useRef(false);
+
+  // Sync the physical artboard rectangle to logical canvas dimension changes
+  useEffect(() => {
+    if (!currentCanvas) return;
+    const artboard = currentCanvas.getObjects().find((o: any) => o.isArtboard);
+    if (artboard) {
+      artboard.set({ width: canvasWidth, height: canvasHeight });
+      currentCanvas.requestRenderAll();
+    }
+  }, [canvasWidth, canvasHeight, currentCanvas]);
 
   const autoFit = useCallback((c: FabricCanvas) => {
     if (!containerRef.current || !c) return;
@@ -116,8 +126,8 @@ export default function Canvas() {
     
     c.on("mouse:down", (opt) => {
       const evt = opt.e as any;
-      // Start Dragging if Space is pressed or Alt is pressed or Middle Click
-      if (spacePressed.current || evt.altKey || evt.button === 1 || !opt.target || (opt.target as any).isArtboard) {
+      // Start Dragging if Space/Alt/Middle mouse is pressed, OR clicked on empty background
+      if (spacePressed.current || evt.altKey || evt.button === 1 || !opt.target) {
         isPanning.current = true;
         c.selection = false;
         c.defaultCursor = "grabbing";
@@ -145,6 +155,52 @@ export default function Canvas() {
       c.selection = true;
       c.defaultCursor = spacePressed.current ? "grab" : "default";
       c.requestRenderAll();
+    });
+
+    c.on("mouse:dblclick", (opt) => {
+      const target = opt.target as any;
+      if (target && target.isPlaceholder && target.placeholderType === "image") {
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.accept = "image/*";
+        fileInput.onchange = (e) => {
+          const file = (e.target as HTMLInputElement).files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const url = event.target?.result as string;
+            FabricImage.fromURL(url).then((img: any) => {
+              const targetWidth = target.width * target.scaleX;
+              const targetHeight = target.height * target.scaleY;
+              const scaleX = targetWidth / img.width!;
+              const scaleY = targetHeight / img.height!;
+              const activeScale = Math.min(scaleX, scaleY); // object-fit: contain logic
+              
+              img.set({
+                originX: "center", originY: "center",
+                left: target.left, top: target.top,
+                angle: target.angle,
+                scaleX: activeScale, scaleY: activeScale,
+                isPlaceholder: true,
+                placeholderType: "image",
+                placeholderLabel: target.placeholderLabel,
+                clipPath: target.clipPath
+              });
+              
+              c.add(img);
+              c.remove(target);
+              c.setActiveObject(img);
+              c.renderAll();
+              saveHistory();
+            });
+          };
+          reader.readAsDataURL(file);
+        };
+        fileInput.style.display = 'none';
+        document.body.appendChild(fileInput);
+        fileInput.click();
+        setTimeout(() => document.body.removeChild(fileInput), 1000); // Cleanup later
+      }
     });
 
     c.on("mouse:wheel", (opt) => {

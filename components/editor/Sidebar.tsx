@@ -9,7 +9,8 @@ import {
   MousePointer2,
   Hand,
   Settings,
-  Plus
+  Plus,
+  LayoutTemplate
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEditor } from "./EditorContext";
@@ -26,6 +27,7 @@ export default function Sidebar() {
     { id: "text", icon: Type, label: "텍스트", shortcut: "T" },
     { id: "image", icon: ImageIcon, label: "이미지" },
     { id: "shape", icon: Shapes, label: "도형" },
+    { id: "templates", icon: LayoutTemplate, label: "템플릿" },
     { id: "ai", icon: Sparkles, label: "AI 생성", highlight: true },
     { id: "layers", icon: Layers, label: "레이어" },
   ];

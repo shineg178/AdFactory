@@ -11,13 +11,13 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEditor } from "./EditorContext";
-import { Shadow } from "fabric";
+import { Shadow, Gradient } from "fabric";
 import * as opentype from "opentype.js";
 
 export default function Properties() {
   const { 
     selectedObject, canvas, canvasWidth, setCanvasWidth, canvasHeight, setCanvasHeight,
-    saveHistory, customFonts, addCustomFont, alignObject, loadSystemFonts
+    saveHistory, customFonts, addCustomFont, alignObject, loadSystemFonts, setArtboardColor
   } = useEditor();
 
   const [fontSize, setFontSize] = useState<number>(32);
@@ -37,6 +37,7 @@ export default function Properties() {
   const [localHeight, setLocalHeight] = useState<string>("");
   const [localX, setLocalX] = useState<string>("");
   const [localY, setLocalY] = useState<string>("");
+  const [artboardBg, setArtboardBg] = useState<string>("#ffffff");
 
   const fontInputRef = useRef<HTMLInputElement>(null);
 
@@ -143,6 +144,22 @@ export default function Properties() {
     canvas.renderAll();
   };
 
+  const applyGradient = (colors: string[]) => {
+    if (!selectedObject || !canvas) return;
+    const gradient = new Gradient({
+      type: 'linear',
+      coords: { x1: 0, y1: 0, x2: selectedObject.width || 100, y2: selectedObject.height || 100 },
+      colorStops: [
+        { offset: 0, color: colors[0] },
+        { offset: 1, color: colors[1] }
+      ]
+    });
+    selectedObject.set("fill", gradient);
+    setFill("gradient");
+    canvas.requestRenderAll();
+    saveHistory();
+  };
+
   const deleteObject = () => {
     if (!selectedObject || !canvas) return;
     canvas.remove(selectedObject);
@@ -219,12 +236,29 @@ export default function Properties() {
         </section>
 
         <section className="space-y-4">
-          <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block">해상도</label>
-          <div className="grid grid-cols-2 gap-3">
-             <div className="space-y-1.5"><span className="text-[10px] text-zinc-500 font-bold uppercase">W</span>
+          <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block">기본 설정</label>
+          
+          {/* Background Color Picker */}
+          <div className="flex items-center justify-between p-3 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-900">
+            <span className="text-xs font-bold text-zinc-600 dark:text-zinc-300">배경 색상</span>
+            <div className="relative w-8 h-8 rounded-full overflow-hidden border border-zinc-200 shadow-sm cursor-pointer">
+              <input 
+                type="color" 
+                value={artboardBg} 
+                onChange={(e) => {
+                  setArtboardBg(e.target.value);
+                  setArtboardColor(e.target.value);
+                }}
+                className="absolute -inset-2 w-16 h-16 cursor-pointer"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mt-3">
+             <div className="space-y-1.5"><span className="text-[10px] text-zinc-500 font-bold uppercase">W (가로)</span>
                <input type="number" value={localWidth} onChange={(e) => { setLocalWidth(e.target.value); const v=parseInt(e.target.value); if(!isNaN(v)) setCanvasWidth(v); }} className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 rounded-lg px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-indigo-500 font-mono" />
              </div>
-             <div className="space-y-1.5"><span className="text-[10px] text-zinc-500 font-bold uppercase">H</span>
+             <div className="space-y-1.5"><span className="text-[10px] text-zinc-500 font-bold uppercase">H (세로)</span>
                <input type="number" value={localHeight} onChange={(e) => { setLocalHeight(e.target.value); const v=parseInt(e.target.value); if(!isNaN(v)) setCanvasHeight(v); }} className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 rounded-lg px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-indigo-500 font-mono" />
              </div>
           </div>
@@ -288,21 +322,18 @@ export default function Properties() {
               <button onClick={() => fontInputRef.current?.click()} className="flex items-center gap-1 text-[10px] font-bold text-indigo-500"><Upload className="size-3" /> 업로드</button>
               <input type="file" ref={fontInputRef} onChange={handleFontUpload} className="hidden" accept=".ttf,.otf,.woff" />
             </div>
-            <select 
-              value={fontFamily} 
-              onChange={(e) => updateProperty("fontFamily", e.target.value)} 
-              className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 rounded-xl px-4 py-3 text-xs font-bold outline-none custom-scrollbar"
-            >
+            <input 
+              list="font-options"
+              value={fontFamily}
+              onChange={(e) => updateProperty("fontFamily", e.target.value)}
+              placeholder="폰트 이름을 검색해보세요..."
+              className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all custom-scrollbar"
+            />
+            <datalist id="font-options">
               {customFonts.map(f => (
-                <option 
-                  key={f.name} 
-                  value={f.family} 
-                  style={{ fontFamily: f.postscriptName ? `"${f.postscriptName}", "${f.family}"` : `"${f.family}"` }}
-                >
-                  {f.name} (Aa)
-                </option>
+                <option key={f.name} value={f.family}>{f.name}</option>
               ))}
-            </select>
+            </datalist>
             <div className="space-y-2">
               <div className="flex justify-between items-center"><span className="text-[10px] text-zinc-500 font-bold uppercase">Size</span><span className="text-[10px] font-mono text-indigo-500">{fontSize}px</span></div>
               <input type="range" min="8" max="250" value={fontSize} onChange={(e) => updateProperty("fontSize", parseInt(e.target.value))} className="w-full accent-indigo-600" />
@@ -335,9 +366,27 @@ export default function Properties() {
 
         <section className="space-y-4">
           <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block">색상 및 투명도</label>
-          <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200">
-             <input type="color" value={fill} onChange={(e) => updateProperty("fill", e.target.value)} className="size-8 rounded-full border-2 border-white shadow-sm cursor-pointer" />
-             <span className="text-xs font-mono font-bold">{fill.toUpperCase()}</span>
+          <div className="flex flex-col gap-3 p-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200">
+             <div className="flex items-center justify-between">
+               <span className="text-[10px] font-bold text-zinc-500">단일 색상 (Solid)</span>
+               <div className="flex items-center gap-2">
+                 <span className="text-[10px] font-mono font-bold text-zinc-400">{fill === 'gradient' ? 'GRADIENT' : fill.toUpperCase()}</span>
+                 <input type="color" value={fill === 'gradient' ? '#ffffff' : fill} onChange={(e) => updateProperty("fill", e.target.value)} className="size-6 rounded-full border border-zinc-300 shadow-sm cursor-pointer" />
+               </div>
+             </div>
+             
+             <div className="h-px bg-zinc-200 dark:bg-zinc-700 w-full" />
+             
+             <div className="flex items-center justify-between">
+               <span className="text-[10px] font-bold text-zinc-500">그라데이션 (프리셋)</span>
+               <div className="flex gap-1.5">
+                 <button onClick={() => applyGradient(['#ff7e5f', '#feb47b'])} className="size-6 rounded-full bg-gradient-to-br from-[#ff7e5f] to-[#feb47b] border border-white shadow-sm hover:scale-110 transition-transform" />
+                 <button onClick={() => applyGradient(['#00c6ff', '#0072ff'])} className="size-6 rounded-full bg-gradient-to-br from-[#00c6ff] to-[#0072ff] border border-white shadow-sm hover:scale-110 transition-transform" />
+                 <button onClick={() => applyGradient(['#43e97b', '#38f9d7'])} className="size-6 rounded-full bg-gradient-to-br from-[#43e97b] to-[#38f9d7] border border-white shadow-sm hover:scale-110 transition-transform" />
+                 <button onClick={() => applyGradient(['#fa709a', '#fee140'])} className="size-6 rounded-full bg-gradient-to-br from-[#fa709a] to-[#fee140] border border-white shadow-sm hover:scale-110 transition-transform" />
+                 <button onClick={() => applyGradient(['#0f2027', '#203a43', '#2c5364'])} className="size-6 rounded-full bg-gradient-to-br from-[#0f2027] to-[#2c5364] border border-white shadow-sm hover:scale-110 transition-transform" />
+               </div>
+             </div>
           </div>
           <div className="space-y-2">
             <div className="flex justify-between items-center"><span className="text-[10px] text-zinc-500 font-bold uppercase">Opacity</span><span className="text-[10px] font-mono text-indigo-500">{Math.round((selectedObject.opacity || 1) * 100)}%</span></div>
