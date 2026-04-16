@@ -12,6 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useEditor } from "./EditorContext";
 import { Shadow } from "fabric";
+import * as opentype from "opentype.js";
 
 export default function Properties() {
   const { 
@@ -84,30 +85,46 @@ export default function Properties() {
       selectedObject.set("shadow", new Shadow({ color: value, blur: shadowBlur, offsetX: 0, offsetY: 0 }));
       setShadowColor(value);
     } else {
-      // Dynamic @font-face injection for local/system fonts
+      // Precision Binary Font Injection
       if (key === "fontFamily") {
+        setFontFamily(value);
         const font = customFonts.find(f => f.family === value);
-        if (font && font.postscriptName) {
-          const styleId = `font-sync-${font.family.replace(/\s+/g, '-')}`;
-          if (!document.getElementById(styleId)) {
-            const style = document.createElement('style');
-            style.id = styleId;
-            style.textContent = `
-              @font-face {
-                font-family: "${font.family}";
-                src: local("${font.fullName}"), local("${font.postscriptName}"), local("${font.family}");
+        
+        // If it is a system font, use the fail-proof Blob extraction method
+        if (font && font.postscriptName && 'queryLocalFonts' in window) {
+          const injectBinaryFont = async () => {
+            try {
+              // @ts-ignore
+              const localFonts = await window.queryLocalFonts();
+              const target = localFonts.find((f: any) => f.postscriptName === font.postscriptName);
+              if (target) {
+                const blob = await target.blob();
+                const buffer = await blob.arrayBuffer();
+                const fontFace = new FontFace(font.family, buffer);
+                const loaded = await fontFace.load();
+                document.fonts.add(loaded);
+                
+                // Once injected into memory, apply it to the canvas object
+                if (selectedObject && canvas) {
+                  selectedObject.set("fontFamily", value);
+                  selectedObject.set("dirty", true);
+                  canvas.requestRenderAll();
+                  saveHistory();
+                }
               }
-            `;
-            document.head.appendChild(style);
-            
-            // Re-render after a brief moment to allow browser font mapping
-            setTimeout(() => {
-              if (canvas) {
+            } catch (e) {
+              console.error("Binary Font Load Fallback:", e);
+              // Fallback to basic string application
+              if (selectedObject && canvas) {
                 selectedObject.set("fontFamily", value);
+                selectedObject.set("dirty", true);
                 canvas.requestRenderAll();
+                saveHistory();
               }
-            }, 50);
-          }
+            }
+          };
+          injectBinaryFont();
+          return; // End execution here for async processing
         }
       }
 
@@ -119,6 +136,9 @@ export default function Properties() {
       if (key === "fontFamily") setFontFamily(value);
       if (key === "stroke") setStroke(value);
       if (key === "strokeWidth") setStrokeWidth(value);
+      canvas.renderAll();
+      saveHistory(); // Ensure changes are tracked
+      return;
     }
     canvas.renderAll();
   };
@@ -134,19 +154,44 @@ export default function Properties() {
   const handleFontUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const fontName = file.name.split('.')[0];
+
+    const defaultName = file.name.split('.')[0];
     const reader = new FileReader();
+
     reader.onload = async (event) => {
       const fontData = event.target?.result as ArrayBuffer;
+      let fontName = defaultName;
+
+      // Extract native localized font name using opentype.js
+      try {
+        const parsedFont = opentype.parse(fontData);
+        const names = parsedFont.names;
+        const fontFam = names?.fontFamily;
+        const fullNm = names?.fullName;
+        
+        // Prioritize Korean name, then English, then filename
+        fontName = (fontFam && fontFam.ko) || 
+                   (fullNm && fullNm.ko) || 
+                   (fontFam && fontFam.en) || 
+                   (fullNm && fullNm.en) || 
+                   defaultName;
+      } catch (err) {
+        console.warn("Failed to parse font metadata, using filename as fallback.", err);
+      }
+
       const font = new FontFace(fontName, fontData);
       try {
         await font.load();
         document.fonts.add(font);
         addCustomFont(fontName, fontName);
         updateProperty("fontFamily", fontName);
-      } catch (err) { console.error(err); }
+      } catch (err) { 
+        console.error(err); 
+        alert("폰트 렌더링에 실패했습니다."); 
+      }
     };
     reader.readAsArrayBuffer(file);
+    if(fontInputRef.current) fontInputRef.current.value = "";
   };
 
   if (!selectedObject) {
@@ -249,7 +294,11 @@ export default function Properties() {
               className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 rounded-xl px-4 py-3 text-xs font-bold outline-none custom-scrollbar"
             >
               {customFonts.map(f => (
-                <option key={f.name} value={f.family} style={{ fontFamily: f.family }}>
+                <option 
+                  key={f.name} 
+                  value={f.family} 
+                  style={{ fontFamily: f.postscriptName ? `"${f.postscriptName}", "${f.family}"` : `"${f.family}"` }}
+                >
                   {f.name} (Aa)
                 </option>
               ))}
