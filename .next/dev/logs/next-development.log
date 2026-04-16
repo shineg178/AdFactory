@@ -1,0 +1,17 @@
+{"timestamp":"00:00:33.751","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:00:36.862","source":"Server","level":"LOG","message":"○ Compiling / ..."}
+{"timestamp":"00:00:46.925","source":"Browser","level":"INFO","message":"%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"}
+{"timestamp":"00:00:57.775","source":"Browser","level":"WARN","message":"Image with src \"http://localhost:3000/vercel.svg\" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: \"auto\"' or 'height: \"auto\"' to maintain the aspect ratio."}
+{"timestamp":"00:00:57.795","source":"Server","level":"WARN","message":"[browser] \"\\u001b[33mImage with src \\\"http://localhost:3000/vercel.svg\\\" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: \\\"auto\\\"' or 'height: \\\"auto\\\"' to maintain the aspect ratio.\\u001b[39m\""}
+{"timestamp":"00:00:57.796","source":"Browser","level":"WARN","message":"\u001b[33mImage with src \"http://localhost:3000/vercel.svg\" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: \"auto\"' or 'height: \"auto\"' to maintain the aspect ratio.\u001b[39m"}
+{"timestamp":"00:01:47.173","source":"Server","level":"LOG","message":"✓ Compiled in 91ms"}
+{"timestamp":"00:06:09.606","source":"Browser","level":"INFO","message":"%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"}
+{"timestamp":"00:06:22.458","source":"Server","level":"LOG","message":"✓ Compiled in 134ms"}
+{"timestamp":"00:06:33.948","source":"Server","level":"LOG","message":"✓ Compiled in 128ms"}
+{"timestamp":"00:09:55.380","source":"Server","level":"LOG","message":"✓ Compiled in 77ms"}
+{"timestamp":"00:10:09.054","source":"Server","level":"LOG","message":"✓ Compiled in 126ms"}
+{"timestamp":"00:10:16.970","source":"Server","level":"LOG","message":"✓ Compiled in 63ms"}
+{"timestamp":"00:10:40.470","source":"Server","level":"LOG","message":"✓ Compiled in 177ms"}
+{"timestamp":"00:11:01.476","source":"Server","level":"LOG","message":"✓ Compiled in 155ms"}
+{"timestamp":"00:11:11.376","source":"Server","level":"LOG","message":"✓ Compiled in 85ms"}
+{"timestamp":"00:13:11.896","source":"Server","level":"LOG","message":"✓ Compiled in 63ms"}
