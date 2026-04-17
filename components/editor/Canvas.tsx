@@ -118,11 +118,34 @@ export default function Canvas() {
 
     setTimeout(() => autoFit(c), 100);
 
+    // Helper: enforce artboard cannot be selected/moved/deleted under any circumstances
+    const lockArtboard = () => {
+      const ab = c.getObjects().find((o: any) => o.isArtboard);
+      if (ab) {
+        ab.set({
+          selectable: false, evented: false, hoverCursor: "default",
+          lockMovementX: true, lockMovementY: true,
+          lockScalingX: true, lockScalingY: true, lockRotation: true,
+          hasControls: false, hasBorders: false,
+        });
+        c.sendObjectToBack(ab);
+      }
+    };
+
     // Events
-    c.on("selection:created", (options) => setSelectedObject(options.selected[0] || null));
-    c.on("selection:updated", (options) => setSelectedObject(options.selected[0] || null));
+    c.on("selection:created", (options) => {
+      const obj = options.selected?.[0];
+      if ((obj as any)?.isArtboard) { c.discardActiveObject(); c.requestRenderAll(); return; }
+      setSelectedObject(obj || null);
+    });
+    c.on("selection:updated", (options) => {
+      const obj = options.selected?.[0];
+      if ((obj as any)?.isArtboard) { c.discardActiveObject(); c.requestRenderAll(); return; }
+      setSelectedObject(obj || null);
+    });
     c.on("selection:cleared", () => setSelectedObject(null));
-    c.on("object:modified", () => saveHistory());
+    c.on("object:modified", () => { lockArtboard(); saveHistory(); });
+    c.on("object:added", lockArtboard);
     
     c.on("mouse:down", (opt) => {
       const evt = opt.e as any;
@@ -234,13 +257,53 @@ export default function Canvas() {
         if (e.target === document.body) e.preventDefault();
       }
 
+      // --- Text formatting (Ctrl+B/I/U) — works even during text editing (Photoshop) ---
+      if ((e.ctrlKey || e.metaKey) && activeObject) {
+        const isTextObj = activeObject.type === "textbox" || activeObject.type === "i-text" || activeObject.type === "text";
+        if (isTextObj) {
+          if (e.key === "b") { e.preventDefault(); (activeObject as any).set("fontWeight", (activeObject as any).fontWeight === "bold" ? "normal" : "bold"); c.requestRenderAll(); saveHistory(); return; }
+          if (e.key === "i") { e.preventDefault(); (activeObject as any).set("fontStyle", (activeObject as any).fontStyle === "italic" ? "normal" : "italic"); c.requestRenderAll(); saveHistory(); return; }
+          if (e.key === "u") { e.preventDefault(); (activeObject as any).set("underline", !(activeObject as any).underline); c.requestRenderAll(); saveHistory(); return; }
+        }
+      }
+
       if (isEditing) return;
 
-      // V (Move), T (Text)
-      if (e.key.toLowerCase() === "v") setActiveTab("select");
-      if (e.key.toLowerCase() === "t") setActiveTab("text");
+      // --- Escape: Deselect & close panel ---
+      if (e.key === "Escape") {
+        c.discardActiveObject();
+        c.renderAll();
+        setActiveTab("select");
+      }
 
-      // Delete / Backspace
+      // --- Tool shortcuts (no modifiers held) ---
+      if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (e.key.toLowerCase() === "v") setActiveTab("select");
+        if (e.key.toLowerCase() === "t") setActiveTab("text");
+        if (e.key.toLowerCase() === "u") setActiveTab("shape");
+
+        // Arrow nudge: 1px / Shift+Arrow: 10px (Photoshop)
+        if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key) && activeObject && !(activeObject as any).isArtboard) {
+          e.preventDefault();
+          const step = e.shiftKey ? 10 : 1;
+          if (e.key === "ArrowUp") activeObject.set("top", (activeObject.top || 0) - step);
+          if (e.key === "ArrowDown") activeObject.set("top", (activeObject.top || 0) + step);
+          if (e.key === "ArrowLeft") activeObject.set("left", (activeObject.left || 0) - step);
+          if (e.key === "ArrowRight") activeObject.set("left", (activeObject.left || 0) + step);
+          activeObject.setCoords();
+          c.renderAll();
+          saveHistory();
+        }
+
+        // Number keys 0-9: Set opacity (PS: 1→10%, 2→20%, … 9→90%, 0→100%)
+        if (e.key >= "0" && e.key <= "9" && activeObject && !(activeObject as any).isArtboard) {
+          activeObject.set("opacity", e.key === "0" ? 1 : parseInt(e.key) / 10);
+          c.renderAll();
+          saveHistory();
+        }
+      }
+
+      // --- Delete / Backspace ---
       if (e.key === "Delete" || e.key === "Backspace") {
         const actives = c.getActiveObjects();
         const toDelete = actives.filter(obj => !(obj as any).isArtboard);
@@ -252,26 +315,73 @@ export default function Canvas() {
         }
       }
 
-      // Ctrl Combinations
+      // --- Ctrl / Cmd combinations ---
       if (e.ctrlKey || e.metaKey) {
         if (e.key === "c") { e.preventDefault(); copy(); }
         if (e.key === "v") { e.preventDefault(); paste(); }
         if (e.key === "z") { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
         if (e.key === "g") { e.preventDefault(); if (e.shiftKey) ungroupObjects(); else groupObjects(); }
-        if (e.key === "a") { 
-          e.preventDefault(); 
+        if (e.key === "a") {
+          e.preventDefault();
           const all = c.getObjects().filter(o => !(o as any).isArtboard);
           c.discardActiveObject();
-          c.setActiveObject(new (FabricObject as any).ActiveSelection(all, { canvas: c }));
+          if (all.length > 0) c.setActiveObject(new (FabricObject as any).ActiveSelection(all, { canvas: c }));
           c.requestRenderAll();
         }
+
+        // Ctrl+0 = Fit to screen (Photoshop)
         if (e.key === "0") { e.preventDefault(); autoFit(c); }
+
+        // Ctrl+1 = 100% zoom (Photoshop)
+        if (e.key === "1") {
+          e.preventDefault();
+          c.setZoom(1);
+          setZoom(1);
+          const vpt = c.viewportTransform;
+          if (containerRef.current) { vpt[4] = containerRef.current.clientWidth / 2; vpt[5] = containerRef.current.clientHeight / 2; }
+          c.requestRenderAll();
+        }
+
+        // Ctrl+D = Deselect (Photoshop)
+        if (e.key === "d") {
+          e.preventDefault();
+          c.discardActiveObject();
+          c.renderAll();
+        }
+
+        // Ctrl+J = Duplicate layer (Photoshop)
+        if (e.key === "j" && activeObject && !(activeObject as any).isArtboard) {
+          e.preventDefault();
+          activeObject.clone().then((cloned: any) => {
+            cloned.set({ left: (cloned.left || 0) + 20, top: (cloned.top || 0) + 20 });
+            c.add(cloned);
+            c.setActiveObject(cloned);
+            c.renderAll();
+            saveHistory();
+          });
+        }
+
+        // Ctrl+= / Ctrl++ = Zoom in
+        if (e.key === "=" || e.key === "+") {
+          e.preventDefault();
+          const nz = Math.min(c.getZoom() * 1.2, 20);
+          c.zoomToPoint(new Point(c.width / 2, c.height / 2), nz);
+          setZoom(nz);
+        }
+
+        // Ctrl+- = Zoom out
+        if (e.key === "-") {
+          e.preventDefault();
+          const nz = Math.max(c.getZoom() / 1.2, 0.01);
+          c.zoomToPoint(new Point(c.width / 2, c.height / 2), nz);
+          setZoom(nz);
+        }
       }
 
-      // Layer Order ([ / ])
-      if (activeObject && !e.ctrlKey) {
+      // --- Layer Order ([ / ]) ---
+      if (activeObject && !(activeObject as any).isArtboard && !e.ctrlKey && !e.metaKey) {
         if (e.key === "[") {
-          if (e.shiftKey) { // Move to Back (just above artboard)
+          if (e.shiftKey) {
             c.sendObjectToBack(activeObject);
             const artboard = c.getObjects().find(o => (o as any).isArtboard);
             if (artboard) c.sendObjectToBack(artboard);

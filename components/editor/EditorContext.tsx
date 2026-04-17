@@ -204,15 +204,12 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     c.loadFromJSON(template.data).then(() => {
       c.getObjects().forEach(obj => {
         const isArtboard = (obj as any).isArtboard;
-        const isPlaceholder = (obj as any).isPlaceholder;
 
         if (isArtboard) {
-          obj.set({ selectable: false, evented: false, lockMovementX: true, lockMovementY: true, lockScalingX: true, lockScalingY: true, lockRotation: true, hasControls: false });
+          obj.set({ selectable: false, evented: false, hoverCursor: "default", lockMovementX: true, lockMovementY: true, lockScalingX: true, lockScalingY: true, lockRotation: true, hasControls: false, hasBorders: false });
           c.sendObjectToBack(obj);
-        } else if (!isPlaceholder) {
-          obj.set({ selectable: false, evented: false, lockMovementX: true, lockMovementY: true, lockScalingX: true, lockScalingY: true, lockRotation: true, hasControls: false });
         }
-        // If it's a placeholder, it remains fully editable.
+        // Non-artboard objects (including placeholders) remain fully editable.
       });
       c.renderAll();
       history.current = [template.data];
@@ -228,6 +225,47 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const applySystemFonts = useCallback((localFonts: any[], showAlert: boolean) => {
+    const fontMap = new Map<string, CustomFont>();
+    localFonts.forEach((f: any) => {
+      const cssName = f.fullName || f.family;
+      if (!fontMap.has(cssName)) {
+        fontMap.set(cssName, {
+          name: f.fullName || f.family,
+          family: cssName,
+          fullName: f.fullName,
+          postscriptName: f.postscriptName
+        });
+      }
+    });
+    const systemFontList = Array.from(fontMap.values());
+    setCustomFonts(prev => {
+      const existingNames = new Set(prev.map(p => p.name.toLowerCase()));
+      const fresh = systemFontList.filter(f => !existingNames.has(f.name.toLowerCase()));
+      return [...prev, ...fresh];
+    });
+    if (showAlert) alert(`${systemFontList.length}개의 시스템 폰트를 불러왔습니다!`);
+  }, []);
+
+  // Auto-load system fonts on mount if permission is already granted
+  useEffect(() => {
+    if (!('queryLocalFonts' in window)) return;
+    const tryAutoLoad = async () => {
+      try {
+        // @ts-ignore
+        const permissionStatus = await navigator.permissions.query({ name: 'local-fonts' } as any);
+        if (permissionStatus.state === 'granted') {
+          // @ts-ignore
+          const localFonts = await window.queryLocalFonts();
+          applySystemFonts(localFonts, false);
+        }
+      } catch {
+        // Permission API may not support 'local-fonts' in all browsers — silently skip
+      }
+    };
+    tryAutoLoad();
+  }, [applySystemFonts]);
+
   const loadSystemFonts = useCallback(async () => {
     if (!('queryLocalFonts' in window)) {
       alert("이 브라우저는 시스템 폰트 연동을 지원하지 않습니다. 최신 크롬/엣지를 사용해 주세요.");
@@ -236,31 +274,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     try {
       // @ts-ignore
       const localFonts = await window.queryLocalFonts();
-      const fontMap = new Map<string, CustomFont>();
-
-      localFonts.forEach((f: any) => {
-        const cssName = f.fullName || f.family;
-        if (!fontMap.has(cssName)) {
-          fontMap.set(cssName, {
-            name: f.fullName || f.family,
-            family: cssName,
-            fullName: f.fullName,
-            postscriptName: f.postscriptName
-          });
-        }
-      });
-
-      const systemFontList = Array.from(fontMap.values());
-      setCustomFonts(prev => {
-        const existingNames = new Set(prev.map(p => p.name.toLowerCase()));
-        const fresh = systemFontList.filter(f => !existingNames.has(f.name.toLowerCase()));
-        return [...prev, ...fresh];
-      });
-      alert(`${systemFontList.length}개의 시스템 폰트를 불러왔습니다!`);
+      applySystemFonts(localFonts, true);
     } catch (e) {
       alert("시스템 폰트 접근 권한이 필요합니다.");
     }
-  }, []);
+  }, [applySystemFonts]);
 
   const copy = useCallback(async () => {
     const c = canvasRef.current;
@@ -313,15 +331,28 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     const c = canvasRef.current;
     const obj = selectedObject;
     if (!c || !obj) return;
-    const bounds = { left: -canvasWidth / 2, top: -canvasHeight / 2, right: canvasWidth / 2, bottom: canvasHeight / 2 };
+
+    // Artboard bounds in canvas coordinate space (artboard is centered at 0,0)
+    const ab = { left: -canvasWidth / 2, top: -canvasHeight / 2, right: canvasWidth / 2, bottom: canvasHeight / 2 };
+
+    // Use bounding rect for the true rendered size (includes scale & rotation)
+    const br = obj.getBoundingRect();
+    const w = br.width;
+    const h = br.height;
+
+    // Current bounding rect top-left in canvas coords
+    const brLeft = obj.left! - (obj.originX === "center" ? w / 2 : 0);
+    const brTop  = obj.top!  - (obj.originY === "center" ? h / 2 : 0);
+
     switch (type) {
-      case "left": obj.set("left", bounds.left + (obj.width * obj.scaleX) / 2); break;
-      case "center": obj.set("left", 0); break;
-      case "right": obj.set("left", bounds.right - (obj.width * obj.scaleX) / 2); break;
-      case "top": obj.set("top", bounds.top + (obj.height * obj.scaleY) / 2); break;
-      case "middle": obj.set("top", 0); break;
-      case "bottom": obj.set("top", bounds.bottom - (obj.height * obj.scaleY) / 2); break;
+      case "top":    obj.set("top",  obj.top!  + (ab.top    - brTop)); break;
+      case "middle": obj.set("top",  obj.top!  + (-h / 2    - brTop)); break;
+      case "bottom": obj.set("top",  obj.top!  + (ab.bottom - brTop - h)); break;
+      case "left":   obj.set("left", obj.left! + (ab.left   - brLeft)); break;
+      case "center": obj.set("left", obj.left! + (-w / 2    - brLeft)); break;
+      case "right":  obj.set("left", obj.left! + (ab.right  - brLeft - w)); break;
     }
+
     obj.setCoords();
     c.renderAll();
     saveHistory();
@@ -382,7 +413,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       const artboard = c.getObjects().find(o => (o as any).isArtboard);
       if (artboard) {
         artboard.set({
-          selectable: false, evented: false, lockMovementX: true, lockMovementY: true,
+          selectable: false, evented: false, hoverCursor: "default",
+          lockMovementX: true, lockMovementY: true,
           lockScalingX: true, lockScalingY: true, lockRotation: true, hasControls: false, hasBorders: false
         });
         c.sendObjectToBack(artboard);
@@ -401,7 +433,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         const artboard = c.getObjects().find(o => (o as any).isArtboard);
         if (artboard) {
           artboard.set({
-            selectable: false, evented: false, lockMovementX: true, lockMovementY: true,
+            selectable: false, evented: false, hoverCursor: "default",
+            lockMovementX: true, lockMovementY: true,
             lockScalingX: true, lockScalingY: true, lockRotation: true, hasControls: false, hasBorders: false
           });
           c.sendObjectToBack(artboard);

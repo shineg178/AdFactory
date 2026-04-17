@@ -88,7 +88,7 @@ export default function Navbar() {
         
         <div className="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-900 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 shadow-inner">
           <button onClick={() => handleZoom(zoom - 0.1)} className="text-zinc-400 hover:text-indigo-600 transition-colors"><ZoomOut className="size-4" /></button>
-          <span className="text-[11px] font-bold text-zinc-900 dark:text-zinc-100 min-w-[45px] text-center font-mono">
+          <span className="text-[11px] font-bold text-zinc-900 dark:text-zinc-100 min-w-11.25 text-center font-mono">
             {Math.round(zoom * 100)}%
           </span>
           <button onClick={() => handleZoom(zoom + 0.1)} className="text-zinc-400 hover:text-indigo-600 transition-colors"><ZoomIn className="size-4" /></button>
