@@ -1,9 +1,5 @@
-import Editor from "@/components/editor/Editor";
+import Wizard from "@/components/wizard/Wizard";
 
 export default function Home() {
-  return (
-    <main className="min-h-screen">
-      <Editor />
-    </main>
-  );
+  return <Wizard />;
 }

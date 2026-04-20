@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "알감자의 배너 공장",
-  description: "AI 광고 소재 자동화 제작 툴",
+  title: "알감자의 카피 공장",
+  description: "AI 광고 소재 자동화 카피 제작 툴",
   icons: {
     icon: "/logo.svg",
   },
