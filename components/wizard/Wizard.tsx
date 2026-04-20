@@ -90,8 +90,8 @@ export default function Wizard() {
               <img src="/logo.svg" alt="AD-Factory" className="w-full h-full object-contain" />
             </div>
             <div className="flex flex-col leading-none">
-              <span className="text-sm font-black tracking-tighter text-zinc-900">AGZ-Studio</span>
-              <span className="text-[9px] font-bold text-amber-600 uppercase tracking-widest">알감자 스튜디오</span>
+              <span className="text-sm font-black tracking-tight text-zinc-900">알감자 스튜디오</span>
+              <span className="text-[9px] font-bold text-amber-600 uppercase tracking-widest">Copy Studio</span>
             </div>
           </div>
           <StepIndicator />
