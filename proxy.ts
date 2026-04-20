@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 // 타이밍 공격 방지: 문자열 길이가 달라도 동일한 시간에 비교
 function safeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) {
-    // 길이가 달라도 루프는 돌게 해서 타이밍 노출 방지
     let diff = 0;
     for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ (b.charCodeAt(i % b.length) || 0);
     return false;
@@ -13,7 +12,7 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const expectedUser = process.env.SITE_USER;
   const expectedPassword = process.env.SITE_PASSWORD;
 
